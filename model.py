@@ -165,7 +165,6 @@ class GRL(nn.Module):
       def forward(self, x):
           return GradientRerverse(x, self.lambda_)
 
-#初始化是用__INIT__, forward是用FORWARD中的函数
 
 class generate_model(nn.Module):
     def __init__(self):
