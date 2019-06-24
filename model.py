@@ -4,6 +4,8 @@ import numpy as np
 import transformer.Constants as Constants
 from transformer.Layers import EncoderLayer
 
+from torch.autograd import Function
+
 
 def get_non_pad_mask(seq):
     assert seq.dim() == 2
@@ -104,6 +106,7 @@ class Encoder(nn.Module):
         return enc_output,
 
 
+
 class Transformer(nn.Module):
 
     def __init__(
@@ -122,13 +125,49 @@ class Transformer(nn.Module):
 
         self.linear = nn.Linear(d_model, 768, bias=False)
 
-    def forward(self, src_seq, src_pos, tgt_seq, tgt_pos):
+    def forward(self, src_seq, src_pos):
 
         enc_output, *_ = self.encoder(src_seq, src_pos)
 
         output = self.linear(enc_output)
 
         return output
+
+
+class GradientRerverse(Function):
+    '''
+    forward 是 identity
+    backward 是 乘一个负值的梯度
+    '''
+
+    @staticmethod
+    def forward(ctx, input, lambda_):
+        '''
+
+        :param ctx: 类似于SELF的作用
+        :param input:
+        :param lambda_:
+        :return:
+        '''
+        ctx.lambda_ = lambda_
+        return input.clone()
+
+    @staticmethod
+    def backward(ctx, grads):
+        lambda_ = ctx.lambda_
+        lambda_ = grads.new_tensor(lambda_)
+        dx = -lambda_ * grads
+        return dx, None
+
+class GRL(nn.Module):
+      def __init__(self, lambda_ =1):
+          super(GRL, self).__init__()
+          self.lambda_ = lambda_
+
+      def forward(self, x):
+          return GradientRerverse(x, self.lambda_)
+
+#初始化是用__INIT__, forward是用FORWARD中的函数
 
 class generate_model(nn.Module):
     def __init__(self):
@@ -139,11 +178,13 @@ class generate_model(nn.Module):
         self.left_socre = nn.Linear(768, left_class)
         self.transformer_right = Transformer(n_src_vocab=100, len_max_seq=20)
         self.right_score = nn.Linear(768, right_class)
+        self.GRL = GRL()
 
-    def forward(self, input):
-        out_left = self.transformer_left(input)
+    def forward(self, src_seq, src_pos):
+        out_left = self.transformer_left(src_seq, src_pos)
         out_left = self.left_socre(out_left)
-        out_right = self.transformer_right(input)
+        out_right = self.transformer_right(src_seq, src_pos)
+        out_right = self.GRL(out_right)
         out_right = self.right_score(out_right)
 
         return  out_left, out_right
