@@ -6,6 +6,14 @@ from transformer.sdp import ScaledDotProductAttention
 class MultiHeadAttention(nn.Module):
 
     def __init__(self, n_head, d_model, d_k, d_v, dropout=0.1):
+        '''
+
+        :param n_head: 论文中是 8
+        :param d_model: 模型的纬度 512
+        :param d_k:  512/8
+        :param d_v:  512/8
+        :param dropout:
+        '''
         super().__init__()
 
         self.n_head = n_head
