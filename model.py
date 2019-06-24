@@ -59,7 +59,7 @@ class Encoder(nn.Module):
         :param len_max_seq: 最长串
         :param d_word_vec:
         :param d_model: 512
-        :param d_inner:
+        :param d_inner:PositionwiseFeedForward一维卷积的中间 channel
         :param dropout:
         '''
 
@@ -83,13 +83,12 @@ class Encoder(nn.Module):
 
     def forward(self, src_seq, src_pos, return_attns=False):
 
-        enc_slf_attn_list = []
+        enc_slf_attn_list = [] #把attention放入list
 
-        # -- Prepare masks
-        slf_attn_mask = get_attn_key_pad_mask(seq_k=src_seq, seq_q=src_seq)
+        slf_attn_mask = get_attn_key_pad_mask(seq_k=src_seq, seq_q=src_seq) #没有词的地方补0
         non_pad_mask = get_non_pad_mask(src_seq)
 
-        # -- Forward
+        #embedding的结果和位置结果相加作为encoder的输入
         enc_output = self.src_word_emb(src_seq) + self.position_enc(src_pos)
 
         for enc_layer in self.layer_stack:
@@ -141,10 +140,10 @@ class generate_model(nn.Module):
         self.transformer_right = Transformer(n_src_vocab=100, len_max_seq=20)
         self.right_score = nn.Linear(768, right_class)
 
-    def forward(self, x):
-        out_left = self.transformer_left()
+    def forward(self, input):
+        out_left = self.transformer_left(input)
         out_left = self.left_socre(out_left)
-        out_right = self.transformer_right
+        out_right = self.transformer_right(input)
         out_right = self.right_score(out_right)
 
         return  out_left, out_right
