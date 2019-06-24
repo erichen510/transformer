@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 import transformer.Constants as Constants
-from transformer.Layers import EncoderLayer, DecoderLayer
+from transformer.Layers import EncoderLayer
 
 
 def get_non_pad_mask(seq):
@@ -53,6 +53,15 @@ class Encoder(nn.Module):
             n_src_vocab, len_max_seq, d_word_vec,
             n_layers, n_head, d_k, d_v,
             d_model, d_inner, dropout=0.1):
+        '''
+
+        :param n_src_vocab: 词汇量
+        :param len_max_seq: 最长串
+        :param d_word_vec:
+        :param d_model: 512
+        :param d_inner:
+        :param dropout:
+        '''
 
         super().__init__()
 
@@ -62,8 +71,8 @@ class Encoder(nn.Module):
         对进来的Sequence进行wording embedding 和 position encondung 
         '''
         self.src_word_emb = nn.Embedding(
-            n_src_vocab, d_word_vec, padding_idx=Constants.PAD)
-
+            n_src_vocab, d_model, padding_idx=Constants.PAD)
+        #todo:将BERT的position加进来替换掉现在的
         self.position_enc = nn.Embedding.from_pretrained(
             get_sinusoid_encoding_table(n_position, d_word_vec, padding_idx=0),
             freeze=True)
@@ -127,9 +136,9 @@ class generate_model(nn.Module):
         super(generate_model, self).__init__()
         left_class = 2
         right_class = 31
-        self.transformer_left = Transformer(n_src_vocab=100, len_max_seq=1)
+        self.transformer_left = Transformer(n_src_vocab=100, len_max_seq=20)
         self.left_socre = nn.Linear(768, left_class)
-        self.transformer_right = Transformer(n_src_vocab=100, len_max_seq=2)
+        self.transformer_right = Transformer(n_src_vocab=100, len_max_seq=20)
         self.right_score = nn.Linear(768, right_class)
 
     def forward(self, x):
