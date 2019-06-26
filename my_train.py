@@ -40,6 +40,7 @@ def train_epoch(model, train_data, optimizer, criterion, device):
 
     model.train()
 
+    total_loss = 0
     #train
     for batch in tqdm(
         train_data, mininterval=2, desc='- Tranning', leave=False):
@@ -58,12 +59,11 @@ def train_epoch(model, train_data, optimizer, criterion, device):
         loss.backward()
         optimizer.step()
 
+        total_loss += loss.item()
         #forward
         optimizer.zero_grad()
 
-
-
-    return loss
+    return total_loss
 
 def eval_epoch(model, val_data, optimizer, criterion, device):
     model.train()
